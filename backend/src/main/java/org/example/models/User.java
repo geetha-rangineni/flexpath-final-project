@@ -14,6 +14,7 @@ public class User {
      */
     private String password;
 
+    public String role;
     /**
      * Creates a new user.
      *
@@ -25,7 +26,15 @@ public class User {
         this.password = password;
     }
 
-    /**
+    public String getRole() {
+		return role;
+	}
+
+	public void setRole(String role) {
+		this.role = role;
+	}
+
+	/**
      * Gets the username of the user.
      *
      * @return The username of the user.

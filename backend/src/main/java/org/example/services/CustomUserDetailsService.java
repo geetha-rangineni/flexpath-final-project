@@ -59,7 +59,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         jwtUser.setUsername(user.getUsername());
         jwtUser.setPassword(user.getPassword());
         jwtUser.setAuthorities(authorities);
-
+      
         // Not sure if this is necessary
         jwtUser.setAccountNonExpired(true);
         jwtUser.setAccountNonLocked(true);
