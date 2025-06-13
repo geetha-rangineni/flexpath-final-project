@@ -18,7 +18,6 @@ export default function UsersPage() {
       const decodedPayload = JSON.parse(atob(payloadBase64));
       const username = decodedPayload?.sub||decodedPayload.username||''
        setUser(username)
-      console.log('test', username);
     } catch (err) {
       console.error('Error decoding token:', err);
     }
