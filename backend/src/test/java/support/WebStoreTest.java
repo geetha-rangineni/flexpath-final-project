@@ -1,6 +1,8 @@
+// Package declaration
 package support;
 
-import org.apache.ibatis.jdbc.ScriptRunner;
+// Required imports
+import org.apache.ibatis.jdbc.ScriptRunner; // Utility to execute SQL scripts
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -19,99 +21,102 @@ import java.util.Objects;
 import static org.junit.Assert.assertEquals;
 
 /**
- * Base class for web store tests.
+ * Base test class for integration testing of the Web Store application.
+ * Provides utilities for database reset, authentication, and HTTP interactions.
  */
 public class WebStoreTest {
+
     /**
-     * The port of the server.
+     * Injected dynamic port for test server (randomized at runtime).
      */
     @LocalServerPort
     protected int port;
 
     /**
-     * The encrypted password "admin"..
+     * Encrypted bcrypt password for 'admin' used in tests.
+     * (Use this value when pre-inserting users into the database).
      */
     public String encryptedAdminPassword = "$2a$10$yNhRmtAD2o/E/5CH83yGsO2aoC3ww1JUE76xUrIYLbfNcTV5G2WrO";
 
     /**
-     * An injected REST template for use in tests.
+     * Injected TestRestTemplate used to perform REST calls to the test server.
      */
     @Autowired
     protected TestRestTemplate restTemplate;
 
     /**
-     * An injected data source for use in tests.
+     * Injected DataSource to run SQL operations or get DB connections.
      */
     @Autowired
     protected DataSource dataSource;
 
     /**
-     * An injected password encoder for use in tests.
+     * Injected PasswordEncoder for hashing and comparing passwords.
      */
     @Autowired
     protected PasswordEncoder passwordEncoder;
 
     /**
-     * Gets the base URL for the server.
-     *
-     * @return The base URL for the server.
+     * Returns the base URL of the running test server (e.g., http://localhost:8081).
      */
     protected String getBaseUrl() {
         return "http://localhost:" + port;
     }
 
     /**
-     * Executes the given SQL statement.
+     * Executes a raw SQL statement using a database connection.
      *
-     * @param sql The SQL statement.
-     * @throws SQLException If an error occurs while executing the SQL statement.
+     * @param sql SQL string to execute.
+     * @throws SQLException if execution fails.
      */
     protected void executeSql(String sql) throws SQLException {
-        try(var statement = dataSource.getConnection().createStatement()) {
+        try (var statement = dataSource.getConnection().createStatement()) {
             statement.execute(sql);
         }
     }
 
     /**
-     * Gets a JDBC template for the data source.
-     *
-     * @return The JDBC template.
+     * Creates a JdbcTemplate using the test DataSource.
+     * Useful for performing direct SQL operations in tests.
      */
     protected JdbcTemplate getJdbcTemplate() {
         return new JdbcTemplate(dataSource);
     }
 
     /**
-     * Sets up the test environment.
+     * Prepares the test environment before each test case runs.
+     * Loads the schema/data using `create-database.sql`.
      *
-     * @throws SQLException If an error occurs while setting up the database.
-     * @throws IOException If an error occurs while reading the database creation script.
+     * @throws SQLException if DB connection fails.
+     * @throws IOException if SQL script can't be read.
      */
     @BeforeEach
     public void setUp() throws SQLException, IOException {
         var connection = dataSource.getConnection();
         var reader = new java.io.InputStreamReader(
-            WebStoreTest.class.getResource
-            ("/create-database.sql").openStream()
+            WebStoreTest.class.getResource("/create-database.sql").openStream()
         );
+
+        // Run SQL script using MyBatis ScriptRunner
         var sr = new ScriptRunner(connection);
         sr.setStopOnError(true);
-        sr.setLogWriter(null);
-        sr.setErrorLogWriter(null);
-        sr.runScript(reader);
+        sr.setLogWriter(null);         // Suppress logs
+        sr.setErrorLogWriter(null);    // Suppress error logs
+        sr.runScript(reader);          // Executes SQL statements in the file
         connection.close();
     }
 
     /**
-     * Gets an empty HTTP entity with a bearer token retrieved from the auth endpoint
-     * using the given username and password.
+     * Authenticates using the provided username and password,
+     * and returns an HttpEntity with a Bearer token (no body).
      *
-     * @param username The username.
-     * @param password The password.
-     * @return The HTTP entity.
+     * @param username Username for login.
+     * @param password Password for login.
+     * @return HttpEntity with Authorization header set.
      */
     protected HttpEntity<Object> GetAuthEntity(String username, String password) {
         var user = new LoginRequest(username, password);
+
         var loginResult = this.restTemplate.postForEntity(
             "http://localhost:" + port + "/auth/login",
             user,
@@ -121,25 +126,31 @@ public class WebStoreTest {
         if (loginResult.getStatusCode() != HttpStatus.OK) {
             throw new RuntimeException("Failed to login: " + loginResult.getStatusCode());
         }
+
+        // Extract token from response
         var token = Objects.requireNonNull(loginResult.getBody()).getAccessToken().getToken();
+
+        // Build headers with Bearer token
         var headers = new HttpHeaders();
         headers.setBearerAuth(token);
         headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
-        return new HttpEntity<>(headers);
+
+        return new HttpEntity<>(headers); // Entity with headers only
     }
 
     /**
-     * Gets an HTTP entity with a bearer token retrieved from the auth endpoint
-     * using the given username and password and the given body.
+     * Same as above, but includes a request body.
+     * Useful for sending authenticated POST/PUT requests.
      *
-     * @param <T> The type of the body.
-     * @param username The username.
-     * @param password The password.
-     * @param body The body.
-     * @return The HTTP entity.
+     * @param <T> Type of the request body.
+     * @param username Username for login.
+     * @param password Password for login.
+     * @param body Request body to include.
+     * @return HttpEntity with Authorization and body.
      */
     protected <T> HttpEntity<T> GetAuthEntity(String username, String password, T body) {
         var user = new LoginRequest(username, password);
+
         var loginResult = this.restTemplate.postForEntity(
             "http://localhost:" + port + "/auth/login",
             user,
@@ -147,10 +158,15 @@ public class WebStoreTest {
         );
 
         assertEquals(HttpStatus.OK, loginResult.getStatusCode());
+
+        // Extract access token
         var token = Objects.requireNonNull(loginResult.getBody()).getAccessToken().getToken();
+
+        // Build headers with Bearer token
         var headers = new HttpHeaders();
         headers.setBearerAuth(token);
         headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
-        return new HttpEntity<>(body, headers);
+
+        return new HttpEntity<>(body, headers); // Entity with body and headers
     }
 }
