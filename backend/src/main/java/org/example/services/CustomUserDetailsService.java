@@ -1,3 +1,4 @@
+// Required imports for security, DAO, user model, and JWT user implementation
 package org.example.services;
 
 import eu.fraho.spring.securityJwt.base.dto.JwtUser;
@@ -14,58 +15,60 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Custom user details service for JWT authentication.
+ * Custom implementation of Spring Security's UserDetailsService
+ * for authenticating users using JWT and loading user roles.
  */
 @Component
 public class CustomUserDetailsService implements UserDetailsService {
-    /**
-     * The user data access object.
-     */
+
+    // Injected DAO to interact with the user table
     private final UserDao userDao;
 
     /**
-     * Creates a new custom user details service.
-     *
-     * @param userDao The user data access object.
+     * Constructor-based injection of UserDao.
      */
     public CustomUserDetailsService(UserDao userDao) {
         this.userDao = userDao;
     }
 
     /**
-     * Loads a user by their username.
+     * Loads user-specific data by username for Spring Security authentication.
      *
-     * @param username The username of the user.
-     * @return The user with the given username.
-     * @throws UsernameNotFoundException If the user is not found.
+     * @param username The username of the user to load.
+     * @return UserDetails object with username, password, and authorities.
+     * @throws UsernameNotFoundException if user not found in DB.
      */
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        // Get user
+        // Retrieve user by username
         User user = userDao.getUserByUsername(username);
         if (user == null) {
+            // Throw Spring's exception if user is not found
             throw new UsernameNotFoundException("User not found.");
         }
 
-        // Get roles -> authorities
+        // Retrieve list of roles associated with the user (e.g., ROLE_ADMIN)
         List<String> roles = userDao.getRoles(username);
+
+        // Convert roles to Spring Security GrantedAuthority objects
         List<GrantedAuthority> authorities = new ArrayList<>();
         for (String role : roles) {
             authorities.add(new SimpleGrantedAuthority(role));
         }
 
-        // Create JwtUser
+        // Create a JwtUser object (provided by fraho's security-jwt library)
         JwtUser jwtUser = new JwtUser();
         jwtUser.setUsername(user.getUsername());
         jwtUser.setPassword(user.getPassword());
         jwtUser.setAuthorities(authorities);
-      
-        // Not sure if this is necessary
+
+        // Set account flags – all are enabled/valid
         jwtUser.setAccountNonExpired(true);
         jwtUser.setAccountNonLocked(true);
-        jwtUser.setApiAccessAllowed(true);
+        jwtUser.setApiAccessAllowed(true); // Enables API access for JWT flow
         jwtUser.setCredentialsNonExpired(true);
         jwtUser.setEnabled(true);
-        return jwtUser;
+
+        return jwtUser; // Return fully constructed Spring-compatible user object
     }
 }
