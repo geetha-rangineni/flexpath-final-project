@@ -45,6 +45,7 @@ public class Entry {
 
     // ----- Getters and Setters -----
 
+    // Getter and setter for id
     public Long getId() {
         return id;
     }
@@ -52,7 +53,7 @@ public class Entry {
     public void setId(Long id) {
         this.id = id;
     }
-
+    // Getter and setter for title
     public String getTitle() {
         return title;
     }
@@ -64,11 +65,11 @@ public class Entry {
     public EntryType getType() {
         return type;
     }
-
+      // Getter and setter for type (EntryType)
     public void setType(EntryType type) {
         this.type = type;
     }
-
+ // Getter and setter for description
     public String getDescription() {
         return description;
     }
@@ -76,11 +77,11 @@ public class Entry {
     public void setDescription(String description) {
         this.description = description;
     }
-
-    public EntryGroup.Visibility getVisibility() {
+       
+       public EntryGroup.Visibility getVisibility() {
         return visibility;
     }
-
+        // Getter and setter for visibility (from EntryGroup.Visibility enum)
     public void setVisibility(EntryGroup.Visibility visibility) {
         this.visibility = visibility;
     }
