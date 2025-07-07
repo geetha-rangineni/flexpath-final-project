@@ -1,21 +1,49 @@
+// Package declaration
 package org.example.models;
 
-import java.util.Date;
+import java.util.Date; // Importing Java Date class for representing date/time
 
+/**
+ * Model class representing a user's activity or health-related entry.
+ * Each entry belongs to a group and contains metadata like type, description, and visibility.
+ */
 public class Entry {
+
+    // Unique identifier for the entry (auto-generated)
     private Long id;
+
+    // Title or short label for the entry (e.g., "Morning Run", "Headache", etc.)
     private String title;
+
+    // Type of entry (Workout, Diet, Symptom, Other)
     private EntryType type;
+
+    // A detailed description of the entry
     private String description;
+
+    // Visibility level for the entry (PRIVATE, SHARED, PUBLIC) - inherited from EntryGroup.Visibility
     private EntryGroup.Visibility visibility;
+
+    // The date when the entry was logged or occurred
     private Date date;
+
+    // The username of the person who created this entry
     private String createdBy;
+
+    // The group this entry is associated with (e.g., "Fitness", "Nutrition")
     private EntryGroup group;
 
+    /**
+     * Enum representing the category/type of the entry.
+     */
     public enum EntryType {
-        Workout, Diet, Symptom, Other
+        Workout, // Physical activity
+        Diet,    // Food/nutrition log
+        Symptom, // Health-related symptom
+        Other    // Any other entry not categorized above
     }
 
+    // ----- Getters and Setters -----
 
     public Long getId() {
         return id;
