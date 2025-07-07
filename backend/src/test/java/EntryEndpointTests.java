@@ -1,4 +1,4 @@
-
+// Import static assertion methods from JUnit
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -24,29 +24,34 @@ import support.FinalTestConfiguration;
 import support.WebStoreTest;
 
 @SpringBootTest(
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    classes = SpringBootApplication.class
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, // Launches a web environment with a random port
+    classes = SpringBootApplication.class // Runs the actual Spring Boot app for integration testing
 )
-@Import(FinalTestConfiguration.class)
+@Import(FinalTestConfiguration.class) // Injects test-specific config (e.g. mock beans or test data setup)
 public class EntryEndpointTests extends WebStoreTest {
+
+    // Used to serialize/deserialize JSON (not actively used in this class but initialized)
     private final ObjectMapper mapper = new ObjectMapper();
 
+    // Test fetching all entries as admin
     @Test
     @DisplayName("GET /api/entries as ADMIN returns all entries")
     public void getAllEntriesAsAdmin() {
-        var request = GetAuthEntity("admin", "admin");
+        var request = GetAuthEntity("admin", "admin"); // Authenticate as admin
         var result = restTemplate.exchange(
             getBaseUrl() + "/api/entries",
             HttpMethod.GET,
             request,
             Entry[].class
         );
+
         assertEquals(HttpStatus.OK, result.getStatusCode());
         Entry[] entries = result.getBody();
         assertNotNull(entries);
-        assertEquals(7, entries.length);
+        assertEquals(7, entries.length); // Expecting 7 entries total
     }
 
+    // Test fetching only "alice"'s entries
     @Test
     @DisplayName("GET /api/entries as user 'alice' returns only alice's entries")
     public void getAllEntriesAsAlice() {
@@ -57,14 +62,15 @@ public class EntryEndpointTests extends WebStoreTest {
             request,
             Entry[].class
         );
+
         assertEquals(HttpStatus.OK, result.getStatusCode());
         Entry[] entries = result.getBody();
         assertNotNull(entries);
-       
         assertEquals(3, entries.length);
         Arrays.stream(entries).forEach(e -> assertEquals("alice", e.getCreatedBy()));
     }
 
+    // Test searching for entries by type
     @Test
     @DisplayName("GET /api/entries/search?field=type&query=Workout as alice")
     public void searchEntriesByType() {
@@ -75,14 +81,15 @@ public class EntryEndpointTests extends WebStoreTest {
             request,
             Entry[].class
         );
+
         assertEquals(HttpStatus.OK, result.getStatusCode());
         Entry[] entries = result.getBody();
         assertNotNull(entries);
-       
         assertEquals(3, entries.length);
         Arrays.stream(entries).forEach(e -> assertEquals(EntryType.Workout, e.getType()));
     }
 
+    // Test fetching entries for user "bob"
     @Test
     @DisplayName("GET /api/entries/user/bob returns bob's entries")
     public void getEntriesByUserBob() {
@@ -93,6 +100,7 @@ public class EntryEndpointTests extends WebStoreTest {
             request,
             Entry[].class
         );
+
         assertEquals(HttpStatus.OK, result.getStatusCode());
         Entry[] entries = result.getBody();
         assertNotNull(entries);
@@ -100,6 +108,7 @@ public class EntryEndpointTests extends WebStoreTest {
         Arrays.stream(entries).forEach(e -> assertEquals("bob", e.getCreatedBy()));
     }
 
+    // Test creating a new entry for "alice"
     @Test
     @DisplayName("POST /api/entries creates a new entry for alice")
     public void postEntryCreatesNew() throws Exception {
@@ -120,21 +129,19 @@ public class EntryEndpointTests extends WebStoreTest {
             request,
             Entry.class
         );
+
         assertEquals(HttpStatus.OK, result.getStatusCode());
         Entry created = result.getBody();
         assertNotNull(created);
         assertEquals("alice", created.getCreatedBy());
         assertEquals("Yoga", created.getTitle());
-      
-        assertEquals(8, created.getId());
+        assertEquals(8, created.getId()); // Assuming entry ID 8 is the next
     }
 
+    // Test updating an existing entry
     @Test
     @DisplayName("PUT /api/entries/3 updates entry 3")
     public void putEntryUpdates() throws Exception {
-      
-        
-
         Entry update = new Entry();
         update.setTitle("Updated Diet");
         update.setType(EntryType.Diet);
@@ -152,12 +159,14 @@ public class EntryEndpointTests extends WebStoreTest {
             request,
             Entry.class
         );
+
         assertEquals(HttpStatus.OK, result.getStatusCode());
         Entry updated = result.getBody();
         assertNotNull(updated);
         assertEquals("Updated Diet", updated.getTitle());
     }
 
+    // Test updating a non-existing entry (ID 999)
     @Test
     @DisplayName("PUT /api/entries/999 returns 404")
     public void putNonexistentReturns404() {
@@ -169,9 +178,11 @@ public class EntryEndpointTests extends WebStoreTest {
             request,
             Entry.class
         );
+
         assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
     }
 
+    // Test deleting an entry
     @Test
     @DisplayName("DELETE /api/entries/4 deletes entry 4")
     public void deleteEntry() {
@@ -182,10 +193,11 @@ public class EntryEndpointTests extends WebStoreTest {
             request,
             Integer.class
         );
+
         assertEquals(HttpStatus.OK, result.getStatusCode());
-        
     }
 
+    // Test deleting a non-existent entry (ID 999)
     @Test
     @DisplayName("DELETE /api/entries/999 returns 404")
     public void deleteNonexistentReturns404() {
@@ -196,6 +208,7 @@ public class EntryEndpointTests extends WebStoreTest {
             request,
             HttpEntity.class
         );
+
         assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
     }
 }
