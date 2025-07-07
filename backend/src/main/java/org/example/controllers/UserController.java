@@ -1,34 +1,37 @@
+// Package declaration
 package org.example.controllers;
 
-import org.example.models.User;
-import org.example.daos.UserDao;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
+// Importing required classes
+import org.example.models.User;                              // User model class
+import org.example.daos.UserDao;                             // DAO for user-related DB operations
+import org.springframework.beans.factory.annotation.Autowired; // For dependency injection
+import org.springframework.http.HttpStatus;                  // HTTP status codes
+import org.springframework.security.access.prepost.PreAuthorize; // Role-based access control
+import org.springframework.web.bind.annotation.*;            // Spring Web annotations
+import org.springframework.web.server.ResponseStatusException; // To throw status-based errors
 
 import java.util.List;
 
 /**
- * Controller for users.
- * This class is responsible for handling all HTTP requests related to users.
+ * REST Controller for handling user management operations.
+ * Restricted to users with ADMIN authority (except for user creation).
  */
 @RestController
-@CrossOrigin
-@RequestMapping("/api/users")
-@PreAuthorize("hasAuthority('ADMIN')")
+@CrossOrigin                                               // Allows cross-origin requests (CORS)
+@RequestMapping("/api/users")                              // Base path for user-related endpoints
+@PreAuthorize("hasAuthority('ADMIN')")                    // Restrict access to admin users
 public class UserController {
+
     /**
-     * The user data access object.
+     * Injected Data Access Object for performing DB operations on users.
      */
     @Autowired
     private UserDao userDao;
 
     /**
-     * Gets all users.
+     * GET endpoint to fetch all users.
      *
-     * @return A list of all users.
+     * @return List of all user accounts.
      */
     @GetMapping
     public List<User> getAll() {
@@ -36,10 +39,10 @@ public class UserController {
     }
 
     /**
-     * Gets a user by their username.
+     * GET endpoint to fetch a user by their username.
      *
-     * @param username The username of the user.
-     * @return The user with the given username.
+     * @param username The username to search for.
+     * @return The corresponding user, if found.
      */
     @GetMapping(path = "/{username}")
     public User get(@PathVariable String username) {
@@ -47,39 +50,46 @@ public class UserController {
     }
 
     /**
-     * Creates a new user.
+     * POST endpoint to create a new user.
+     * This endpoint is publicly accessible (no auth required).
      *
-     * @param user The user to create.
-     * @return The created user.
+     * @param user The user details to be created.
+     * @return The created user object.
      */
-    @ResponseStatus(HttpStatus.CREATED)
+    @ResponseStatus(HttpStatus.CREATED)                   // Respond with HTTP 201
     @PostMapping
-    @PreAuthorize("permitAll()")
+    @PreAuthorize("permitAll()")                          // Allow anyone to access this endpoint
     public User create(@RequestBody User user) {
         return userDao.createUser(user);
     }
 
     /**
-     * Updates a specific user's password.
+     * PUT endpoint to update a user's password.
      *
-     * @param password The new password.
-     * @param username The username of the user.
+     * @param password The new password string (sent in the request body).
+     * @param username The target username.
      * @return The updated user.
      */
     @PutMapping(path = "/{username}/password")
     public User updatePassword(@RequestBody String password, @PathVariable String username) {
+        // Fetch user by username
         User user = userDao.getUserByUsername(username);
+
+        // Throw 404 if user not found
         if (user == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found");
         }
+
+        // Set new password and update user
         user.setPassword(password);
         return userDao.updatePassword(user);
     }
 
     /**
-     * Deletes a user.
+     * DELETE endpoint to delete a user by their username.
      *
-     * @param username The username of the user to delete.
+     * @param username Username of the user to delete.
+     * @return Number of rows affected.
      */
     @DeleteMapping(path = "/{username}")
     public int delete(@PathVariable String username) {
@@ -87,9 +97,10 @@ public class UserController {
     }
 
     /**
-     * Gets all roles for a user.
+     * GET endpoint to retrieve all roles assigned to a user.
      *
-     * @return A list of all roles for the user.
+     * @param username Username of the user.
+     * @return List of role names.
      */
     @GetMapping(path = "/{username}/roles")
     public List<String> getRoles(@PathVariable String username) {
@@ -97,11 +108,11 @@ public class UserController {
     }
 
     /**
-     * Adds a role to a user.
+     * POST endpoint to add a role to a user.
      *
-     * @param username The username of the user.
-     * @param role The role to add.
-     * @return A list of all roles for the user.
+     * @param username Username of the user.
+     * @param role Role name to be added (passed in request body).
+     * @return Updated list of roles for the user.
      */
     @PostMapping(path = "/{username}/roles")
     public List<String> addRole(@PathVariable String username, @RequestBody String role) {
@@ -109,14 +120,17 @@ public class UserController {
     }
 
     /**
-     * Deletes a role from a user.
+     * DELETE endpoint to remove a specific role from a user.
      *
-     * @param username The username of the user.
-     * @param role The role to delete.
+     * @param username Username of the user.
+     * @param role Role name to remove.
+     * @return Number of rows affected.
      */
     @DeleteMapping(path = "/{username}/roles/{role}")
     public int deleteRole(@PathVariable String username, @PathVariable String role) {
         var affectedRows = userDao.deleteRole(username, role.toUpperCase());
+
+        // Throw 404 if no role was deleted
         if (affectedRows == 0) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Role not found");
         } else {
